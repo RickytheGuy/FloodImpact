@@ -29,7 +29,9 @@ jobs:
         activate-environment: fld
         environment-file: environment.yml
 
-    - name: Test GDAl
+    - name: Test GDAL
       run: |
         python ./tests/gdal_test.py
+    - name: Test GDAL
+      run: |
         python ./tests/rio_test.py
