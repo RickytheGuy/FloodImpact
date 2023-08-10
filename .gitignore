@@ -1,1 +1,5 @@
 .DS_Store
+flood_impact.tif
+flood_cost.tif
+*.pyc
+__pycache__
