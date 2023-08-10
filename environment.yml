@@ -1,0 +1,10 @@
+name: fld
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - gdal
+  - pip:
+      - geopandas
+      - pyarrow
+      - rasterio

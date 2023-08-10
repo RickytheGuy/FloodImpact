@@ -1,0 +1,34 @@
+name: Test Flood Impact
+
+on:
+  [push, pull_request, workflow_dispatch]
+
+jobs:
+  test:
+    name: Flood Impact
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0} # For conda envs: https://github.com/marketplace/actions/setup-miniconda#important
+
+    steps:
+    - name: Check Out Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.*
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.*
+
+    - name: Create environment with mamba
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        mamba-version: "*"
+        channels: conda-forge,defaults
+        auto-activate-base: false
+        activate-environment: fld
+        environment-file: environment.yml
+
+    - name: Test GDAl
+      run: |
+        python ./tests/gdal_test.py

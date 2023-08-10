@@ -10,38 +10,15 @@ from time import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple
 
-os.environ['USE_PYGEOS'] = '0'
-os.environ['PROJ_LIB'] = "C:\\Users\\lrr43\\.conda\\envs\\gdal\\Library\\share\\proj"
-os.environ['GDAL_DATA'] = "C:\\Users\\lrr43\\.conda\\envs\\gdal\\Library\\share"
-
 import geopandas as gpd
 import numpy as np
 
-def main():
-    ############################################ INPUTS #########################################################
-    # Set absolute path of working directory
-    path = "C:\\Users\\lrr43\\Desktop\\Lab\\Flood Impact"
-
-    # Load up croplands raster dataset path (either shortened as so or absolute)
-    croplands_path = os.path.join(path,"chazuta_peru","croplands_S10W80.tif")
-
-    # Load up population raster dataset path (either shortened as so or absolute)
-    pop_path = os.path.join(path,"chazuta_peru","worldpop_peru.tif")
-
-    # Load up the OpenSteetMap point shapefile dataset path (either shortened as so or absolute)
-    osm_file = os.path.join(path,"chazuta_peru","chazuta_osm","Chazuta_points.shp")
-    #osm_file = r"C:\Users\lrr43\Downloads\mygeodata\map\amenity_points-point.shp"
-
-    # Upload the flood map shapefile dataset path (either shortened as so or absolute). May be shapefile, geopackage, or raster
-    flood_file = os.path.join(path,"chazuta_peru","chazuta_floodmap.tif")
-    #flood_file = r"C:\Users\lrr43\Desktop\Lab\Flood Impact\chazuta_peru\floodmap.tif"
-
-    # This is the output flood impact map
-    impact_file = r"C:\Users\lrr43\Downloads\impact.tif"
-
-    # Optional cost map, can let it be None if not desired
-    cost_file = r"C:\Users\lrr43\Downloads\cost.tif"
-
+def impact(croplands_path: str,
+           pop_path: str,
+           osm_file: str,
+           flood_file: str,
+           impact_file: str,
+           cost_file: str = None):
     ############################################ PROCESS #########################################################
 
     start = time()
@@ -272,6 +249,3 @@ def create_disk_dataset(ref_dataset: gdal.Dataset, out_path: str, width: int, he
     output_ds.SetProjection(ref_dataset.GetProjection())
     
     return output_ds
-
-if __name__ == "__main__":
-    main()
