@@ -1,17 +1,14 @@
 #####################################################################################################
 # Based off Evan's work, optimized by Ricky Rosas
 #####################################################################################################
-import os
 import re
-import locale
-
-from osgeo import gdal
 from time import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple
 
 import geopandas as gpd
 import numpy as np
+from osgeo import gdal
 
 def impact(croplands_path: str,
            pop_path: str,
@@ -224,11 +221,25 @@ def normalize_array(array: np.ndarray, high: int = 255) -> np.ndarray:
     return (array - min_val) * (high / (np.max(array) - min_val))
 
 def format_money(amount: int or float) -> str:
-    # Set the locale to your system's default or desired locale (e.g., 'en_US' or 'en_GB')
-    locale.setlocale(locale.LC_ALL, 'en_CA.UTF-8')  
+    thousands_sep = ","
+    decimal_point = "."
 
-    # Format the integer amount as money with the appropriate thousands separator and decimal point
-    return locale.currency(amount, grouping=True)[:-3]
+    # Convert the amount to a string
+    formatted_amount = f"{amount:.2f}"
+
+    # Split the formatted amount into integer and fractional parts
+    integer_part, _ = formatted_amount.split(".")
+
+    # Add thousands separators
+    integer_part_with_sep = ""
+    for i, digit in enumerate(reversed(integer_part)):
+        if i > 0 and i % 3 == 0:
+            integer_part_with_sep = thousands_sep + integer_part_with_sep
+        integer_part_with_sep = digit + integer_part_with_sep
+
+    # Reconstruct the formatted amount
+    formatted_currency = "$" + integer_part_with_sep
+    return formatted_currency
 
 def create_mem_dataset(ref_dataset: gdal.Dataset, dtype) -> gdal.Dataset:
     """
