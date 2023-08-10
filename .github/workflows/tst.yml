@@ -32,6 +32,7 @@ jobs:
     - name: Test GDAL
       run: |
         python ./tests/gdal_test.py
-    - name: Test GDAL
+
+    - name: Test Rasterio
       run: |
-        python tests/rio_test.py
+        python rio_test.py
