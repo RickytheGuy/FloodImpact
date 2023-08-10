@@ -1,14 +1,12 @@
 import os
 import sys
 import cProfile
-
 # Add the project_root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
-from python.fld_impact_gdal import impact
-from osgeo import gdal
-import numpy as np
+from python.fld_impact_rio import impact
+import rasterio
 
 # Load up croplands raster dataset path 
 croplands_path = 'tests/croplands.tif'
@@ -36,30 +34,14 @@ try:
 except Exception as e:
     raise e
 
-def read_raster_bands(file_path):
-    ds = gdal.Open(file_path, gdal.GA_ReadOnly)
-    
-    bands_data = []
-    for band_num in range(1, ds.RasterCount + 1):
-        band = ds.GetRasterBand(band_num)
-        band_data = band.ReadAsArray()
-        bands_data.append(band_data)
-    
-    ds = None  # Close the dataset
-    
-    return np.array(bands_data)
+def read_raster_band(file_path):
+    with rasterio.open(file_path, 'r') as src:
+        return src.read()
 
-impact_arr = read_raster_bands(impact_file)
-
-impact_val_arr = read_raster_bands(impact_validation)
-
-
-ds = gdal.Open(cost_file, gdal.GA_ReadOnly)
-cost_arr = ds.GetRasterBand(1).ReadAsArray(0)
-ds = None
-ds = gdal.Open(impact_cost, gdal.GA_ReadOnly)
-cost_val_arr = ds.GetRasterBand(1).ReadAsArray(0)
-ds = None
+impact_arr = read_raster_band(impact_file)
+impact_val_arr = read_raster_band(impact_validation)
+cost_arr = read_raster_band(cost_file)
+cost_val_arr = read_raster_band(impact_cost)
 
 try:
     assert (impact_arr.shape == impact_val_arr.shape), "Impact array and validation shapes do not match"

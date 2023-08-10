@@ -3,3 +3,5 @@ flood_impact.tif
 flood_cost.tif
 *.pyc
 __pycache__
+*.xml
+test.tif

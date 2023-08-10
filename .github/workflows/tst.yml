@@ -32,3 +32,4 @@ jobs:
     - name: Test GDAl
       run: |
         python ./tests/gdal_test.py
+        python ./tests/rio_test.py
