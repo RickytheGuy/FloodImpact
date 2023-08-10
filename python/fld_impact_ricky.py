@@ -225,7 +225,7 @@ def normalize_array(array: np.ndarray, high: int = 255) -> np.ndarray:
 
 def format_money(amount: int or float) -> str:
     # Set the locale to your system's default or desired locale (e.g., 'en_US' or 'en_GB')
-    locale.setlocale(locale.LC_ALL, '')  
+    locale.setlocale(locale.LC_ALL, 'en_CA.UTF-8')  
 
     # Format the integer amount as money with the appropriate thousands separator and decimal point
     return locale.currency(amount, grouping=True)[:-3]

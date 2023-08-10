@@ -27,8 +27,10 @@ cost_file = 'tests/flood_cost.tif'
 
 impact_validation = 'tests/impact_validation.tif'
 impact_cost = 'tests/cost_validation.tif'
-
-impact(croplands_path,pop_path,osm_file,flood_file,impact_file,cost_file)
+try:
+    impact(croplands_path,pop_path,osm_file,flood_file,impact_file,cost_file)
+except Exception as e:
+    raise e
 
 ds = gdal.Open(impact_file, gdal.GA_ReadOnly)
 impact_arr = ds.GetRasterBand(1).ReadAsArray(0)
