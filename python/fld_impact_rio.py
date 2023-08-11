@@ -36,64 +36,63 @@ def impact(croplands_path: str,
     cost_file : str, optional
         If specified, path to output cost map
     """
-    floodmap_dataset = rasterio.open(flood_file, 'r')
-    floodmap_array = floodmap_dataset.read(1)  # Assuming you're interested in the first band
-    flood_geo = floodmap_dataset.transform
+    with rasterio.open(flood_file, 'r') as floodmap_dataset:
+        floodmap_dataset = rasterio.open(flood_file, 'r')
+        floodmap_array = floodmap_dataset.read(1)  # Assuming you're interested in the first band
+        flood_geo = floodmap_dataset.transform
 
-    # Calculate pixel area in hectares
-    pixel_area = abs(flood_geo[0] * flood_geo[4]) * 12348543360 / 10000
+        # Calculate pixel area in hectares
+        pixel_area = abs(flood_geo[0] * flood_geo[4]) * 12348543360 / 10000
 
-    # Allocate the impact array
-    impact_array = np.zeros((floodmap_array.shape[0], floodmap_array.shape[1], 4), dtype=np.uint8)
+        # Allocate the impact array
+        impact_array = np.zeros((floodmap_array.shape[0], floodmap_array.shape[1], 4), dtype=np.uint8)
 
-    with ThreadPoolExecutor(max_workers=3) as executor: 
-        # Run the functions concurrently in parallel
-        future_pop = executor.submit(get_population, floodmap_dataset, floodmap_array, pop_path)
-        future_crop = executor.submit(get_crop, floodmap_dataset, floodmap_array, croplands_path, pixel_area)
-        future_amenities = executor.submit(get_osm_table, osm_file, floodmap_dataset, floodmap_array)
+        with ThreadPoolExecutor(max_workers=3) as executor: 
+            # Run the functions concurrently in parallel
+            future_pop = executor.submit(get_population, floodmap_dataset, floodmap_array, pop_path)
+            future_crop = executor.submit(get_crop, floodmap_dataset, floodmap_array, croplands_path, pixel_area)
+            future_amenities = executor.submit(get_osm_table, osm_file, floodmap_dataset, floodmap_array)
 
-        # Get the results from the futures
-        pop_count, impact_array[:,:,0], max_pop = future_pop.result()
-        crop_hectares, impact_array[:,:,1] = future_crop.result()
-        amenities_df, location_df = future_amenities.result()
+            # Get the results from the futures
+            pop_count, impact_array[:,:,0], max_pop = future_pop.result()
+            crop_hectares, impact_array[:,:,1] = future_crop.result()
+            amenities_df, location_df = future_amenities.result()
 
-    indices = location_df[['x','y']].values.T
-    max_osm_cost = location_df['cost'].max()
-    impact_array[indices[1],indices[0],2] = location_df['cost'].values * 255 / max_osm_cost
+        indices = location_df[['x','y']].values.T
+        max_osm_cost = location_df['cost'].max()
+        impact_array[indices[1],indices[0],2] = location_df['cost'].values * 255 / max_osm_cost
 
-    # The alpha channel should be set to opaque (255) iff any of the other three channels have any value above 0
-    impact_array[(np.count_nonzero(impact_array, axis=2) != 0 ), 3] = 255
+        # The alpha channel should be set to opaque (255) iff any of the other three channels have any value above 0
+        impact_array[(np.count_nonzero(impact_array, axis=2) != 0 ), 3] = 255
 
-    # assume average size of home is 1600 sqft, people per home is 4.9, so 326.5 sqft per person (8.25 is cost per sqft)
-    pop_impact_cost = 326.5 * 8.25
+        # assume average size of home is 1600 sqft, people per home is 4.9, so 326.5 sqft per person (8.25 is cost per sqft)
+        pop_impact_cost = 326.5 * 8.25
 
-    # assume that croplands are $2648 per acre -> $1071.6 per hectare * reduction in price due to flood 
-    # -> https://le.uwpress.org/content/early/2021/08/18/wple.97.1.061019-0075R1
-    cost_per_hectare = 1071.6 * (1 - 0.243)
-    crop_impact_cost = crop_hectares * cost_per_hectare
+        # assume that croplands are $2648 per acre -> $1071.6 per hectare * reduction in price due to flood 
+        # -> https://le.uwpress.org/content/early/2021/08/18/wple.97.1.061019-0075R1
+        cost_per_hectare = 1071.6 * (1 - 0.243)
+        crop_impact_cost = crop_hectares * cost_per_hectare
 
-    with rasterio.open(impact_file, 'w', driver='GTiff', width=floodmap_array.shape[1], height=floodmap_array.shape[0], 
-                       count=4, dtype=np.uint8, nodata=None, crs=floodmap_dataset.crs, transform=floodmap_dataset.transform) as output_ds:
-        for i in range(4):
-            output_ds.write(impact_array[:,:,i], i + 1)
- 
-    building_cost = location_df['cost'].sum()
-    residential_cost = pop_count*pop_impact_cost
+        with rasterio.open(impact_file, 'w', driver='GTiff', width=floodmap_array.shape[1], height=floodmap_array.shape[0], 
+                        count=4, dtype=np.uint8, nodata=None, crs=floodmap_dataset.crs, transform=floodmap_dataset.transform) as output_ds:
+            for i in range(4):
+                output_ds.write(impact_array[:,:,i], i + 1)
+    
+        building_cost = location_df['cost'].sum()
+        residential_cost = pop_count*pop_impact_cost
 
-    # save cost map
-    if cost_file is not None:
-        profile = floodmap_dataset.profile
-        profile.update(driver='GTiff', dtype=rasterio.float32, count=1, nodata=0)
+        # save cost map
+        if cost_file is not None:
+            profile = floodmap_dataset.profile
+            profile.update(driver='GTiff', dtype=rasterio.float32, count=1, nodata=0)
 
-        cost_array = ((impact_array[:, :, 0] * max_pop * pop_impact_cost) + 
-                    (impact_array[:, :, 1] * cost_per_hectare) + 
-                    (impact_array[:, :, 2] * max_osm_cost)) / 255
-        cost_array = np.where(cost_array < 0, 0, cost_array)  # Setting negative values to 0
-        
-        with rasterio.open(cost_file, 'w', **profile) as cost_ds:
-            cost_ds.write(cost_array, 1)
-
-    floodmap_dataset.close()
+            cost_array = ((impact_array[:, :, 0] * max_pop * pop_impact_cost) + 
+                        (impact_array[:, :, 1] * cost_per_hectare) + 
+                        (impact_array[:, :, 2] * max_osm_cost)) / 255
+            cost_array = np.where(cost_array < 0, 0, cost_array)  # Setting negative values to 0
+            
+            with rasterio.open(cost_file, 'w', **profile) as cost_ds:
+                cost_ds.write(cost_array, 1)
 
     print(f"The amenity group table is:\n{amenities_df}")
 
