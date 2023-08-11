@@ -2,7 +2,6 @@
 # Based off Evan's work, optimized by Ricky Rosas
 #####################################################################################################
 import re
-from time import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple
 
@@ -16,9 +15,27 @@ def impact(croplands_path: str,
            flood_file: str,
            impact_file: str,
            cost_file: str = None):
-    ############################################ PROCESS #########################################################
+    """
+    Main function for creating impact maps. 
 
-    start = time()
+    Parameters
+    ----------
+    croplands_path : str
+        Path to a file of Global Food Security-Support Analysis Data at 30 m -> https://www.usgs.gov/centers/western-geographic-science-center/science/global-food-security-support-analysis-data-30-m
+        This dataset contains a number of values, but the value that corresponds to "croplands" is 2: this is the value measured. 
+    pop_path : str
+        Path to a file of population counts -> https://hub.worldpop.org/geodata/listing?id=78
+        This dataset contains the estimated population of a region of a given cell
+    osm_file: str
+        Path to a file of Open Street Map points (downloaded here, converted to shp or geopackage) -> https://download.geofabrik.de/
+        This dataset contains a field called 'amenity' or 'other_tags'
+    flood_file : str
+        Path to rasterized flood inundation map
+    impact_file : str,
+        Path to output flood impact geotiff
+    cost_file : str, optional
+        If specified, path to output cost map
+    """
     floodmap_dataset = gdal.Open(flood_file, gdal.GA_ReadOnly)
     floodmap_array = floodmap_dataset.ReadAsArray()
     flood_geo = floodmap_dataset.GetGeoTransform()
@@ -81,9 +98,6 @@ def impact(croplands_path: str,
     print(f"\nThe estimated loss of farmlands is {format_money(crop_impact_cost)}")
 
     print(f"\nTotal flood impact losses: {format_money(building_cost+residential_cost+crop_impact_cost)}")
-
-    print(round(time() - start,2), ' seconds')
-    2
     
 def get_population(floodmap_dataset: gdal.Dataset, floodmap_array: np.ndarray, pop_path: str) -> Tuple[int, np.ndarray, np.float64]:
         """
