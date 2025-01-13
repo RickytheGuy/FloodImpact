@@ -1,6 +1,5 @@
 import os
 import sys
-import cProfile
 
 # Add the project_root directory to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -36,18 +35,9 @@ try:
 except Exception as e:
     raise e
 
-def read_raster_bands(file_path):
-    ds = gdal.Open(file_path, gdal.GA_ReadOnly)
-    
-    bands_data = []
-    for band_num in range(1, ds.RasterCount + 1):
-        band = ds.GetRasterBand(band_num)
-        band_data = band.ReadAsArray()
-        bands_data.append(band_data)
-    
-    ds = None  # Close the dataset
-    
-    return np.array(bands_data)
+def read_raster_bands(file_path) -> np.ndarray:
+    with gdal.Open(file_path) as ds:
+        return ds.ReadAsArray()
 
 impact_arr = read_raster_bands(impact_file)
 

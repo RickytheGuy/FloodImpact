@@ -136,7 +136,7 @@ def get_crop(flood_dataset, flood_array, crop_raster, pixel_area) -> Tuple[int, 
     return round(np.count_nonzero(intersection_array) * pixel_area, 2), intersection_array * 255 # Convert to hectares, count_nonzero may be faster for larger datasets
 
 def get_osm_table(osm_file: str, floodmap_dataset: gdal.Dataset, floodmap_array: np.ndarray) -> Tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    osm_gdf = gpd.read_file(osm_file)
+    osm_gdf: gpd.GeoDataFrame = gpd.read_file(osm_file)
     flood_geo = floodmap_dataset.GetGeoTransform()
 
     # Create x and y coordinates that are in regards to the floodmap dataset
